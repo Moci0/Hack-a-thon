@@ -1,58 +1,84 @@
 import json
 import matplotlib.pyplot as plt
+import sys
+import os
 
 def draw_golf_map(json_file):
+    if not os.path.exists(json_file):
+        print(f"❌ File {json_file} not found.")
+        return
+
     with open(json_file, 'r') as f:
         data = json.load(f)
 
-    # 1. Create a lookup dictionary for nodes {id: (lat, lon)}
+    # 1. Map all Nodes (The dots)
     nodes = {item['id']: (item['lon'], item['lat']) for item in data['elements'] if item['type'] == 'node'}
 
-    plt.figure(figsize=(10, 10))
+    plt.figure(figsize=(12, 12), facecolor='#2c3e50') # Dark background for the app feel
+    ax = plt.gca()
+    ax.set_facecolor('#27ae60') # Grass green background
     
     found_features = False
 
-    # 2. Iterate through "ways" (the shapes)
+    # 2. Process Ways (The shapes)
     for item in data['elements']:
         if item['type'] == 'way':
             tags = item.get('tags', {})
-            golf_type = tags.get('golf')
-            hole_ref = tags.get('ref', 'Unknown')
+            golf_type = tags.get('golf') or tags.get('leisure')
+            
+            way_nodes = item.get('nodes', [])
+            coords = [nodes[node_id] for node_id in way_nodes if node_id in nodes]
+            
+            if not coords: continue
+            
+            x, y = zip(*coords)
+            
+            # STYLING RULES
+            color = None
+            alpha = 0.6
+            zorder = 1
+            
+            if golf_type == 'fairway':
+                color = '#2ecc71' # Bright Green
+                zorder = 2
+            elif golf_type == 'green':
+                color = '#006400' # Darker Green
+                zorder = 4
+            elif golf_type == 'bunker':
+                color = '#f1c40f' # Sand Yellow
+                zorder = 3
+                alpha = 0.9
+            elif golf_type == 'water_hazard' or tags.get('natural') == 'water':
+                color = '#3498db' # Water Blue
+                zorder = 3
+            elif golf_type == 'tee':
+                color = '#ffffff' # White Tee Box
+                zorder = 4
+            elif golf_type == 'hole': # The path line
+                plt.plot(x, y, color='white', linestyle='--', linewidth=1, alpha=0.5, zorder=5)
+                continue
 
-            # We want to draw fairways, greens, and hole paths
-            if golf_type in ['fairway', 'green', 'hole', 'tee']:
+            if color:
                 found_features = True
+                plt.fill(x, y, color=color, alpha=alpha, zorder=zorder, edgecolor='none')
                 
-                # Get the coordinates for every node in this way
-                way_nodes = item.get('nodes', [])
-                x = [nodes[node_id][0] for node_id in way_nodes if node_id in nodes]
-                y = [nodes[node_id][1] for node_id in way_nodes if node_id in nodes]
-
-                # Choose color based on type
-                color = 'green'
-                if golf_type == 'fairway': color = '#2ecc71' # Light Green
-                if golf_type == 'green': color = '#27ae60'   # Dark Green
-                if golf_type == 'hole': color = 'blue'        # Path line
-                
-                # Plot the shape
-                plt.plot(x, y, color=color, linewidth=1)
-                plt.fill(x, y, color=color, alpha=0.3) # Fill the shape with color
-                
-                # Label the hole number if available
-                if hole_ref != 'Unknown' and x and y:
-                    plt.text(x[0], y[0], f"Hole {hole_ref}", fontsize=9)
+                # Label Hole Numbers
+                if 'ref' in tags:
+                    plt.text(x[0], y[0], tags['ref'], color='white', fontsize=10, weight='bold', zorder=6)
 
     if not found_features:
-        print("No fairway or hole shapes found in this JSON file.")
+        print(f"⚠️ No drawable shapes in {json_file}. The data might be stored as 'Relations'.")
         return
 
-    # Clean up the map appearance
-    plt.axis('equal') # Keeps the course from looking stretched
-    plt.title("Golf Course Vector Map")
-    plt.xlabel("Longitude") 
-    plt.ylabel("Latitude")
+    # 3. Final Formatting
+    plt.axis('equal')
+    plt.axis('off') # Hide lat/lon numbers for a clean app look
+    course_name = json_file.split('/')[-1]
+    plt.title(f"Vector Map: {course_name}", color='white', pad=20, fontsize=15)
+    
+    print(f"🎨 Rendering map for {json_file}...")
     plt.show()
 
 if __name__ == "__main__":
-    # Run this on the output file you generated earlier
-    draw_golf_map('test_output.json')
+    target = sys.argv[1] if len(sys.argv) > 1 else 'course_data/course_26741.json'
+    draw_golf_map(target)

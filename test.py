@@ -2,7 +2,6 @@ import requests
 import json
 import os
 import time
-import re
 
 # Configuration
 INPUT_FILE = 'all_courses_export.txt'
@@ -14,11 +13,10 @@ if not os.path.exists(OUTPUT_DIR):
 def fetch_osm_data(lat, lon, course_name):
     url = "https://overpass-api.de/api/interpreter"
     headers = {
-        'User-Agent': 'GolfCaddieApp_Hackathon/1.0',
+        'User-Agent': 'GolfCaddieApp_Hackathon/2.0',
         'Accept': 'application/json'
     }
     
-    # Radius of 1500m to catch the whole course
     query = f"""
     [out:json][timeout:60];
     (
@@ -38,61 +36,68 @@ def fetch_osm_data(lat, lon, course_name):
             print("⚠️ Rate limited. Waiting 10 seconds...")
             time.sleep(10)
             return fetch_osm_data(lat, lon, course_name)
-        else:
-            return None
     except Exception as e:
         print(f"Error fetching {course_name}: {e}")
-        return None
+    return None
 
 def parse_custom_txt(file_path):
-    """Parses your specific txt format by finding JSON blocks between braces."""
+    """Robustly extracts JSON objects by tracking brace depth."""
     courses = []
     with open(file_path, 'r') as f:
         content = f.read()
-        
-    # Use regex to find every valid JSON block {} in the file
-    json_blocks = re.findall(r'(\{.*?\})', content, re.DOTALL)
+
+    start_idx = -1
+    brace_count = 0
     
-    for block in json_blocks:
-        try:
-            course_data = json.loads(block)
-            courses.append(course_data)
-        except json.JSONDecodeError:
-            continue
+    for i, char in enumerate(content):
+        if char == '{':
+            if brace_count == 0:
+                start_idx = i
+            brace_count += 1
+        elif char == '}':
+            brace_count -= 1
+            if brace_count == 0 and start_idx != -1:
+                json_str = content[start_idx:i+1]
+                try:
+                    courses.append(json.loads(json_str))
+                except json.JSONDecodeError:
+                    pass
     return courses
 
 def main():
     print(f"Reading {INPUT_FILE}...")
     courses = parse_custom_txt(INPUT_FILE)
-    
-    print(f"Found {len(courses)} courses in file.")
+    print(f"Found {len(courses)} valid course objects in file.")
 
-    for course in courses:
+    if not courses:
+        print("❌ Could not extract any JSON from the file. Check the format!")
+        return
+
+    # To test quickly, we only process the first few courses 
+    # (Remove the [:10] later to do the whole file)
+    for course in courses[:20]: 
         c_id = course.get('id', 'unknown')
         name = course.get('course_name', 'Unknown_Course')
         loc = course.get('location', {})
         lat = loc.get('latitude')
         lon = loc.get('longitude')
 
-        # Check if we already have this data to save time/API hits
         filename = f"{OUTPUT_DIR}/course_{c_id}.json"
-        if os.path.exists(filename):
-            print(f"⏩ Skipping {name} (File already exists)")
-            continue
-
+        
         if lat and lon:
-            print(f"📡 Querying OSM for: {name}...")
+            print(f"📡 Querying: {name} ({lat}, {lon})")
             data = fetch_osm_data(lat, lon, name)
             
-            if data and data.get('elements'):
+            if data and len(data.get('elements', [])) > 1:
                 with open(filename, 'w') as out:
                     json.dump(data, out, indent=4)
-                print(f"✅ Saved to {filename}")
+                print(f"✅ Saved detail to {filename}")
             else:
-                print(f"ℹ️  No detailed map data for {name} in OpenStreetMap yet.")
+                print(f"ℹ️  No detailed map data for {name}")
             
-            # API Courtesy Sleep
-            time.sleep(2) 
+            time.sleep(1.5) 
+        else:
+            print(f"⏩ Skipping {name}: Missing coordinates.")
 
 if __name__ == "__main__":
     main()
