@@ -32,6 +32,7 @@ class Golf
         
         //weather conditions and how they affect play and strategy advice
         string weatherImpact(string weatherCondition);// Provides advice on how different weather conditions can impact play and suggests strategies to adapt to those conditions
+        void displayWeatherAdvice(string weatherCondition);// Displays specific advice for playing in different weather conditions
     private:
         string courseName;
         string location;

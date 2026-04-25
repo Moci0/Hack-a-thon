@@ -119,3 +119,63 @@ void Golf::scoreCard(int strokes, int par) {
     int score = calculateScore(strokes, par);
     cout << "Total Score: " << score << endl;
 }
+
+string Golf:: chooseClub(double distanceToHole){// Suggest a club based on the distance to the hole and the average distances for each club
+    if (distanceToHole > clubDistances["Driver"]) {
+        return "Use Driver";
+    } else if (distanceToHole > clubDistances["3-Wood"]) {
+        return "Use 3-Wood";
+    } else if (distanceToHole > clubDistances["5-Wood"]) {
+        return "Use 5-Wood";
+    } else if (distanceToHole > clubDistances["2-Iron"]) {
+        return "Use 2-Iron";
+    } else if (distanceToHole > clubDistances["3-Iron"]) {
+        return "Use 3-Iron";
+    } else if (distanceToHole > clubDistances["4-Iron"]) {
+        return "Use 4-Iron";
+    } else if (distanceToHole > clubDistances["5-Iron"]) {
+        return "Use 5-Iron";
+    } else if (distanceToHole > clubDistances["6-Iron"]) {
+        return "Use 6-Iron";
+    } else if (distanceToHole > clubDistances["7-Iron"]) {
+        return "Use 7-Iron";
+    } else if (distanceToHole > clubDistances["8-Iron"]) {
+        return "Use 8-Iron";
+    } else if (distanceToHole > clubDistances["9-Iron"]) {
+        return "Use 9-Iron";
+    } else if (distanceToHole > clubDistances["Pitching Wedge"]) {
+        return "Use Pitching Wedge";
+    } else {
+        return "Use Sand Wedge"; // For short distances, recommend a sand wedge
+    }
+}
+ int Golf::calculateScore(int strokes, int par) {
+    int totalScore;
+    if (strokes < par) {
+        totalScore = strokes - par; // Under par
+    } else if (strokes == par) {
+        totalScore = 0; // Even par
+    } else {
+        totalScore = strokes - par; // Over par
+    }
+    return totalScore;// Return the calculated score
+}
+
+string Golf::weatherImpact(string weatherCondition) {
+    if (weatherCondition == "Rain") {
+        return "Rain can make the course slippery and affect ball control. Consider using a club with more loft for better control.";
+    } else if (weatherCondition == "Windy") {
+        return "Wind can significantly affect ball trajectory. Aim slightly into the wind and consider using a lower lofted club to reduce the impact of the wind.";
+    } else if (weatherCondition == "Sunny") {
+        return "Sunny weather is ideal for playing golf. Make sure to stay hydrated and use sunscreen to protect yourself from UV rays.";
+    } else if (weatherCondition == "Cold") {
+        return "Cold weather can reduce ball distance. Consider using a club that you typically hit farther than usual to compensate for the reduced distance.";
+    } else {
+        return "Unknown weather condition. Please provide a valid weather condition for advice.";
+    }
+}
+void Golf::displayWeatherAdvice(string weatherCondition) {
+     weatherImpact(weatherCondition)
+    cout << "Weather Condition: " << weatherCondition << endl;
+    cout << "Advice: " <<  weatherImpact(weatherCondition) << endl;
+}
