@@ -12,8 +12,10 @@ class Profile
         Profile();
         
        Profile(string firstName, string lastName, string email, string password);// Parameterized constructor to initialize profile information
-        void displayAccountInfo(string firstName, string lastName, string email);
+        void displayAccountInfo(string firstName, string lastName, string email, int handicap);// Displays account information
         bool login(string email, string password);// Login function to verify email and password
+        void updateHandicap(int newHandicap);// Function to update the player's handicap
+
      
 
         
@@ -22,6 +24,7 @@ class Profile
         string lastName;
         string email;
         string password;
+        int handicap; // Golf handicap to track player's skill level
        
 
 };
