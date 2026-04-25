@@ -12,6 +12,8 @@ class Golf
         Golf();// Default constructor
         
         double getdistance(double lat1, double lon1, double lat2, double lon2, double yardage);
+       // double getvectordistance(double x1, double y1, double x2, double y2);
+
         double metersToYards(double meters);// Converts meters to yards
         double yardsToMeters(double yards);// Converts yards to meters
         void displayCourseInfo(string courseName, string location, int par, double distance);// Displays course information
