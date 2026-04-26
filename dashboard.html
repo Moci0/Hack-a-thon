@@ -57,13 +57,16 @@
 
     <script>
         const defaultClubs = {
-            'Driver': 230,
-            '3-Wood': 210,
-            '5-Iron': 150,
-            '7-Iron': 130,
-            '9-Iron': 110,
-            'Pitching Wedge': 100,
-            'Sand Wedge': 80
+        'Driver': 230,
+        '3-Wood': 210,
+        '5-Wood': 180,
+        '5-Iron': 150,
+        '6-Iron': 140,
+        '7-Iron': 130,
+        '8-Iron': 120,
+        '9-Iron': 110,
+        'Pitching Wedge': 100,
+        'Sand Wedge': 80
         };
 
         const clubsGrid = document.getElementById('clubsGrid');
@@ -86,6 +89,28 @@
             lon: document.getElementById('liveLon'),
             clubRec: document.getElementById('clubRec')
         };
+
+        let initialProfileLoad = false;
+        let initialClubLoad = false;
+
+        function setProfileFields(user) {
+            if (!user || initialProfileLoad) {
+                return;
+            }
+            fields.firstName.value = user.firstName || '';
+            fields.lastName.value = user.lastName || '';
+            fields.email.value = user.email || '';
+            fields.handicap.value = user.handicap || '';
+            initialProfileLoad = true;
+        }
+
+        function setClubInputs(clubs) {
+            if (!clubs || initialClubLoad) {
+                return;
+            }
+            createClubInputs(clubs);
+            initialClubLoad = true;
+        }
 
         function createClubInputs(values) {
             clubsGrid.innerHTML = '';
@@ -123,6 +148,13 @@
                 liveFields.lat.textContent = live.user_lat || '—';
                 liveFields.lon.textContent = live.user_lon || '—';
                 liveFields.clubRec.textContent = live.recommendation || '—';
+
+                if (user) {
+                    setProfileFields(user);
+                }
+                if (data.clubs) {
+                    setClubInputs(data.clubs);
+                }
             } catch (err) {
                 statusText.textContent = 'Cannot reach backend. Is app.py running?';
             }
@@ -140,6 +172,9 @@
                 alert(result.error);
             } else {
                 alert('Profile saved. Ready for simulator.');
+                if (result.clubs) {
+                    createClubInputs(result.clubs);
+                }
             }
             await refreshLive();
         });
@@ -155,6 +190,9 @@
                 alert(result.error);
             } else {
                 alert('Club yardages saved.');
+                if (result.clubs) {
+                    createClubInputs(result.clubs);
+                }
             }
             await refreshLive();
         });

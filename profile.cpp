@@ -7,7 +7,6 @@ Profile::Profile() {
     firstName = "";
     lastName = "";
     email = "";
-    age = 0;
     handicap = 0;
 }
 Profile::Profile(string firstName, string lastName, string email) {
@@ -15,7 +14,6 @@ Profile::Profile(string firstName, string lastName, string email) {
     this->firstName = firstName;
     this->lastName = lastName;
     this->email = email;
-    this->age = 0; // Default age
     this->handicap = 0; // Default handicap
 }
 void Profile::displayAccountInfo() {

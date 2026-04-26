@@ -1,18 +1,66 @@
 from flask import Flask, request, jsonify, send_from_directory
 import os
 import time
+import json
 import subprocess
 import shutil
 
 app = Flask(__name__, static_folder='.', static_url_path='')
+
+USER_STORE_FILE = 'users.json'
+
+def load_user_store():
+    if not os.path.exists(USER_STORE_FILE):
+        return {'users': {}}
+    try:
+        with open(USER_STORE_FILE, 'r') as f:
+            return json.load(f)
+    except Exception:
+        return {'users': {}}
+
+
+def save_user_store(store):
+    with open(USER_STORE_FILE, 'w') as f:
+        json.dump(store, f, indent=2)
+
+
+def get_saved_user(email):
+    if not email:
+        return None
+    store = load_user_store()
+    return store.get('users', {}).get(email.lower())
+
+
+def save_user_profile(user):
+    if not user or not user.get('email'):
+        return
+    store = load_user_store()
+    email = user['email'].lower()
+    profile = store.get('users', {}).get(email, {})
+    profile.update({
+        'firstName': user.get('firstName', ''),
+        'lastName': user.get('lastName', ''),
+        'email': email,
+        'handicap': user.get('handicap', ''),
+        'clubs': user.get('clubs', state['clubs'])
+    })
+    if 'users' not in store:
+        store['users'] = {}
+    store['users'][email] = profile
+    save_user_store(store)
+    return profile
+
 
 state = {
     'user': None,
     'clubs': {
         'Driver': 230,
         '3-Wood': 210,
+        '5-Wood': 180,
         '5-Iron': 150,
+        '6-Iron': 140,
         '7-Iron': 130,
+        '8-Iron': 120,
         '9-Iron': 110,
         'Pitching Wedge': 100,
         'Sand Wedge': 80
@@ -41,15 +89,24 @@ def api_login():
     user = {
         'firstName': payload.get('firstName', '').strip(),
         'lastName': payload.get('lastName', '').strip(),
-        'email': payload.get('email', '').strip(),
+        'email': payload.get('email', '').strip().lower(),
         'handicap': payload.get('handicap', '').strip()
     }
 
     if not user['firstName'] or not user['email']:
         return jsonify({'error': 'First name and email are required.'}), 400
 
-    state['user'] = user
-    return jsonify({'message': 'User logged in.', 'user': state['user']})
+    saved = get_saved_user(user['email'])
+    if saved:
+        state['user'] = saved
+        if isinstance(saved.get('clubs'), dict) and saved['clubs']:
+            state['clubs'] = saved['clubs']
+    else:
+        state['user'] = user
+        state['user']['clubs'] = state['clubs']
+        save_user_profile(state['user'])
+
+    return jsonify({'message': 'User logged in.', 'user': state['user'], 'clubs': state['clubs']})
 
 
 @app.route('/api/clubs', methods=['POST'])
@@ -70,6 +127,10 @@ def api_clubs():
         return jsonify({'error': 'No valid club distances found.'}), 400
 
     state['clubs'] = sanitized
+    if state['user'] and state['user'].get('email'):
+        state['user']['clubs'] = state['clubs']
+        save_user_profile(state['user'])
+
     return jsonify({'message': 'Club distances saved.', 'clubs': state['clubs']})
 
 

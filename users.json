@@ -1,0 +1,25 @@
+{
+  "users": {
+    "test@example.com": {
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "test@example.com",
+      "handicap": "12",
+      "clubs": {
+        "Driver": 240,
+        "3-Wood": 220
+      }
+    },
+    "jane@example.com": {
+      "firstName": "Jane",
+      "lastName": "Doe",
+      "email": "jane@example.com",
+      "handicap": "8",
+      "clubs": {
+        "Driver": 235,
+        "3-Wood": 205,
+        "5-Wood": 190
+      }
+    }
+  }
+}
