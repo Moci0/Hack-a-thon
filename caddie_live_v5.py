@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.path import Path
 import os
 import sys
+import urllib.request
+import urllib.error
 
 # ============================================================
 # MANUAL MAPPING AREA: CLOVERNOOK CC (4617)
@@ -58,6 +60,9 @@ class ProCaddieSim:
         self.last_known_hole = "1" # Default to 1
         self.move_step = 0.00005 
         self.speed_multiplier = 1.0
+        self.dashboard_mode = '--dashboard' in sys.argv or os.environ.get('DASHBOARD_MODE') == '1'
+        self.dashboard_url = os.environ.get('DASHBOARD_URL', 'http://127.0.0.1:5000/api/live/update')
+        self.live_distance = None
         
         # Load JSON Data
         with open(json_path, 'r') as f:
@@ -119,6 +124,25 @@ class ProCaddieSim:
         if not coords: return None
         return (sum(c[0] for c in coords) / len(coords), sum(c[1] for c in coords) / len(coords))
 
+    def push_dashboard_state(self, status=None):
+        if not self.dashboard_mode:
+            return
+        payload = {
+            'course_id': self.course_id,
+            'hole': self.last_known_hole,
+            'distance': self.live_distance,
+            'speed': f'{self.speed_multiplier:.1f}x',
+            'status': status or 'Simulator running',
+            'user_lon': self.user_lon,
+            'user_lat': self.user_lat
+        }
+        data = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(self.dashboard_url, data=data, headers={'Content-Type': 'application/json'})
+        try:
+            urllib.request.urlopen(req, timeout=1)
+        except Exception:
+            pass
+
     def teleport_to_tee(self, hole_ref):
         """Places user at the fairway point furthest from the green."""
         green = self.greens.get(hole_ref)
@@ -177,12 +201,16 @@ class ProCaddieSim:
         if target_green:
             gx, gy = target_green['centroid']
             dist = self.get_distance(self.user_lat, self.user_lon, gy, gx)
+            self.live_distance = int(dist)
             if current_fairway_ref:
                 title = f"⛳️ HOLE {current_fairway_ref} | 🚩 {int(dist)} YARDS"
             else:
                 title = f"⚠️ OFF HOLE {self.last_known_hole} | 🚩 {int(dist)} YDS TO PIN"
         else:
             title = "🌲 FIND A FAIRWAY"
+            self.live_distance = None
+
+        self.push_dashboard_state(status=title)
 
         # 3. Draw Course
         for b in self.bunkers:

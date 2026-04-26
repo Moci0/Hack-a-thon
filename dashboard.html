@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RoraAI Caddy Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+    <div class="app-shell">
+        <section class="panel panel-left">
+            <h1>RoraAI Caddy</h1>
+            <div class="card" id="login-card">
+                <h2>Login</h2>
+                <label>First Name<input id="firstName" type="text" placeholder="First name" /></label>
+                <label>Last Name<input id="lastName" type="text" placeholder="Last name" /></label>
+                <label>Email<input id="email" type="email" placeholder="Email" /></label>
+                <label>Handicap<input id="handicap" type="number" placeholder="Handicap" /></label>
+                <button id="loginBtn" type="button">Save Profile</button>
+                <div class="help-text" id="loginHelp">Enter your profile data to start.</div>
+            </div>
+
+            <div class="card" id="clubs-card">
+                <h2>Club Yardages</h2>
+                <div class="club-grid" id="clubsGrid"></div>
+                <button id="saveClubsBtn" type="button">Save Clubs</button>
+                <div class="help-text">Use the simulator to update live distance, then get a recommendation.</div>
+            </div>
+        </section>
+
+        <section class="panel panel-right">
+            <div class="dashboard-header">
+                <h2>Live Caddie Dashboard</h2>
+                <p id="statusText">Waiting for simulator...</p>
+            </div>
+            <div class="live-grid">
+                <div class="stat-card"><span>Hole</span><strong id="liveHole">—</strong></div>
+                <div class="stat-card"><span>Distance</span><strong id="liveDistance">—</strong></div>
+                <div class="stat-card"><span>Speed</span><strong id="liveSpeed">—</strong></div>
+                <div class="stat-card"><span>Course</span><strong id="liveCourse">—</strong></div>
+                <div class="stat-card"><span>Latitude</span><strong id="liveLat">—</strong></div>
+                <div class="stat-card"><span>Longitude</span><strong id="liveLon">—</strong></div>
+                <div class="stat-card recommendation-card"><span>Recommended Club</span><strong id="clubRec">—</strong></div>
+            </div>
+            <div class="notes-card">
+                <h3>How to use</h3>
+                <ol>
+                    <li>Run <code>python3 app.py</code> in one terminal.</li>
+                    <li>Open <code>dashboard.html</code> in your browser or visit <code>http://127.0.0.1:5000/</code>.</li>
+                    <li>Enter login info and save clubs.</li>
+                    <li>Run <code>python3 caddie_live_v5.py --dashboard</code> in another terminal.</li>
+                    <li>Use arrow keys and <code>n</code>/<code>p</code> to move the simulator.</li>
+                </ol>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const defaultClubs = {
+            'Driver': 230,
+            '3-Wood': 210,
+            '5-Iron': 150,
+            '7-Iron': 130,
+            '9-Iron': 110,
+            'Pitching Wedge': 100,
+            'Sand Wedge': 80
+        };
+
+        const clubsGrid = document.getElementById('clubsGrid');
+        const loginBtn = document.getElementById('loginBtn');
+        const saveClubsBtn = document.getElementById('saveClubsBtn');
+        const statusText = document.getElementById('statusText');
+        const fields = {
+            firstName: document.getElementById('firstName'),
+            lastName: document.getElementById('lastName'),
+            email: document.getElementById('email'),
+            handicap: document.getElementById('handicap')
+        };
+
+        const liveFields = {
+            hole: document.getElementById('liveHole'),
+            distance: document.getElementById('liveDistance'),
+            speed: document.getElementById('liveSpeed'),
+            course: document.getElementById('liveCourse'),
+            lat: document.getElementById('liveLat'),
+            lon: document.getElementById('liveLon'),
+            clubRec: document.getElementById('clubRec')
+        };
+
+        function createClubInputs(values) {
+            clubsGrid.innerHTML = '';
+            Object.entries(values).forEach(([name, value]) => {
+                const wrapper = document.createElement('label');
+                wrapper.className = 'club-entry';
+                wrapper.innerHTML = `
+                    <span>${name}</span>
+                    <input type="number" value="${value}" data-club="${name}" min="10" />
+                `;
+                clubsGrid.appendChild(wrapper);
+            });
+        }
+
+        async function postJson(path, body) {
+            const response = await fetch(path, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            return response.json();
+        }
+
+        async function refreshLive() {
+            try {
+                const res = await fetch('/api/live');
+                const data = await res.json();
+                const live = data.live || {};
+                const user = data.user;
+                statusText.textContent = user ? `Logged in as ${user.firstName} ${user.lastName}` : 'Waiting for simulator...';
+                liveFields.hole.textContent = live.hole || '—';
+                liveFields.distance.textContent = live.distance ? `${live.distance} yd` : '—';
+                liveFields.speed.textContent = live.speed || '—';
+                liveFields.course.textContent = live.course_id || '—';
+                liveFields.lat.textContent = live.user_lat || '—';
+                liveFields.lon.textContent = live.user_lon || '—';
+                liveFields.clubRec.textContent = live.recommendation || '—';
+            } catch (err) {
+                statusText.textContent = 'Cannot reach backend. Is app.py running?';
+            }
+        }
+
+        loginBtn.addEventListener('click', async () => {
+            const payload = {
+                firstName: fields.firstName.value,
+                lastName: fields.lastName.value,
+                email: fields.email.value,
+                handicap: fields.handicap.value
+            };
+            const result = await postJson('/api/login', payload);
+            if (result.error) {
+                alert(result.error);
+            } else {
+                alert('Profile saved. Ready for simulator.');
+            }
+            await refreshLive();
+        });
+
+        saveClubsBtn.addEventListener('click', async () => {
+            const clubInputs = document.querySelectorAll('input[data-club]');
+            const clubs = {};
+            clubInputs.forEach(input => {
+                clubs[input.dataset.club] = input.value;
+            });
+            const result = await postJson('/api/clubs', { clubs });
+            if (result.error) {
+                alert(result.error);
+            } else {
+                alert('Club yardages saved.');
+            }
+            await refreshLive();
+        });
+
+        createClubInputs(defaultClubs);
+        refreshLive();
+        setInterval(refreshLive, 1500);
+    </script>
+</body>
+</html>
