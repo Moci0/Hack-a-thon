@@ -1,0 +1,83 @@
+body {
+    margin: 0;
+}
+
+/* Every block takes full screen */
+.section {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: white;
+}
+
+/* Different colors for each block */
+.s1 {
+    background: #1e3a8a;
+}
+
+.s2 {
+    background: #2563eb;
+}
+
+.s3 {
+    background: #3b82f6;
+}
+
+.s4 {
+    background: #60a5fa;
+}
+
+.s5 {
+    background: #93c5fd;
+}
+
+.top-left {
+  position: absolute;
+  top: 3;
+  left: 1;
+  margin: 0; /* Remove default browser margins to hit the very edge */
+}
+.title-container
+{
+    height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: white;
+    background: #0f172a;
+
+}
+.RoraAI{
+
+    height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: white;
+
+}
+
+.landing {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 15px;
+}
+
+.start-btn {
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+}
