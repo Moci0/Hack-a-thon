@@ -20,6 +20,42 @@
         "3-Wood": 205,
         "5-Wood": 190
       }
+    },
+    "britlstevens@gmail.com": {
+      "firstName": "Brit",
+      "lastName": "Stevens",
+      "email": "britlstevens@gmail.com",
+      "handicap": "0",
+      "clubs": {
+        "3-Wood": 210,
+        "5-Iron": 150,
+        "5-Wood": 180,
+        "6-Iron": 140,
+        "7-Iron": 100,
+        "8-Iron": 120,
+        "9-Iron": 110,
+        "Driver": 230,
+        "Pitching Wedge": 100,
+        "Sand Wedge": 80
+      }
+    },
+    "test@gmail.com": {
+      "firstName": "Test",
+      "lastName": "T",
+      "email": "test@gmail.com",
+      "handicap": "20",
+      "clubs": {
+        "Driver": 230,
+        "3-Wood": 210,
+        "5-Wood": 180,
+        "5-Iron": 150,
+        "6-Iron": 140,
+        "7-Iron": 130,
+        "8-Iron": 120,
+        "9-Iron": 110,
+        "Pitching Wedge": 100,
+        "Sand Wedge": 80
+      }
     }
   }
 }

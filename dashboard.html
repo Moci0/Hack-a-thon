@@ -35,12 +35,20 @@
             </div>
             <div class="live-grid">
                 <div class="stat-card"><span>Hole</span><strong id="liveHole">—</strong></div>
+                <div class="stat-card"><span>Par</span><strong id="livePar">4</strong></div>
+                <div class="stat-card"><span>Strokes</span><strong id="liveStrokes">0</strong></div>
                 <div class="stat-card"><span>Distance</span><strong id="liveDistance">—</strong></div>
-                <div class="stat-card"><span>Speed</span><strong id="liveSpeed">—</strong></div>
-                <div class="stat-card"><span>Course</span><strong id="liveCourse">—</strong></div>
                 <div class="stat-card"><span>Latitude</span><strong id="liveLat">—</strong></div>
                 <div class="stat-card"><span>Longitude</span><strong id="liveLon">—</strong></div>
                 <div class="stat-card recommendation-card"><span>Recommended Club</span><strong id="clubRec">—</strong></div>
+            </div>
+            <div class="card">
+                <h3>Controls</h3>
+                <button id="addStrokeBtn" type="button">Add Stroke</button>
+            </div>
+            <div class="card">
+                <h3>Scorecard</h3>
+                <div id="scorecard">No scores yet.</div>
             </div>
             <div class="notes-card">
                 <h3>How to use</h3>
@@ -82,9 +90,9 @@
 
         const liveFields = {
             hole: document.getElementById('liveHole'),
+            par: document.getElementById('livePar'),
+            strokes: document.getElementById('liveStrokes'),
             distance: document.getElementById('liveDistance'),
-            speed: document.getElementById('liveSpeed'),
-            course: document.getElementById('liveCourse'),
             lat: document.getElementById('liveLat'),
             lon: document.getElementById('liveLon'),
             clubRec: document.getElementById('clubRec')
@@ -142,12 +150,26 @@
                 const user = data.user;
                 statusText.textContent = user ? `Logged in as ${user.firstName} ${user.lastName}` : 'Waiting for simulator...';
                 liveFields.hole.textContent = live.hole || '—';
+                liveFields.par.textContent = live.par || '4';
+                liveFields.strokes.textContent = live.strokes || '0';
                 liveFields.distance.textContent = live.distance ? `${live.distance} yd` : '—';
-                liveFields.speed.textContent = live.speed || '—';
-                liveFields.course.textContent = live.course_id || '—';
                 liveFields.lat.textContent = live.user_lat || '—';
                 liveFields.lon.textContent = live.user_lon || '—';
                 liveFields.clubRec.textContent = live.recommendation || '—';
+
+                // Update scorecard
+                const scorecardDiv = document.getElementById('scorecard');
+                scorecardDiv.innerHTML = '';
+                if (live.strokes_per_hole && Object.keys(live.strokes_per_hole).length > 0) {
+                    Object.entries(live.strokes_per_hole).sort(([a], [b]) => parseInt(a) - parseInt(b)).forEach(([hole, strokes]) => {
+                        scorecardDiv.innerHTML += `<p>Hole ${hole}: ${strokes} strokes</p>`;
+                    });
+                    const cumulative = live.cumulative_score || 0;
+                    const cumulativeText = cumulative > 0 ? `+${cumulative}` : cumulative < 0 ? cumulative : 'E';
+                    scorecardDiv.innerHTML += `<p><strong>Total: ${cumulativeText}</strong></p>`;
+                } else {
+                    scorecardDiv.innerHTML = 'No scores yet.';
+                }
 
                 if (user) {
                     setProfileFields(user);
@@ -195,6 +217,13 @@
                 }
             }
             await refreshLive();
+        });
+
+        document.getElementById('addStrokeBtn').addEventListener('click', async () => {
+            const result = await postJson('/api/live/stroke', {});
+            if (result.strokes !== undefined) {
+                liveFields.strokes.textContent = result.strokes;
+            }
         });
 
         createClubInputs(defaultClubs);

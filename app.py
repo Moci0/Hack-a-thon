@@ -51,6 +51,37 @@ def save_user_profile(user):
     return profile
 
 
+# Par data for courses
+PAR_DATA = {
+    "4617": [5, 4, 4, 3, 5, 3, 4, 3, 4, 4, 3, 4, 4, 3, 4, 5, 5, 4]  # Holes 1-18
+}
+
+def get_par_for_hole(course_id, hole):
+    if course_id in PAR_DATA:
+        pars = PAR_DATA[course_id]
+        if isinstance(hole, str):
+            if hole.isdigit():
+                hole_num = int(hole) - 1
+            else:
+                return 4
+        elif isinstance(hole, int):
+            hole_num = hole - 1
+        else:
+            return 4
+        if 0 <= hole_num < len(pars):
+            return pars[hole_num]
+    return 4  # default par
+
+
+def get_cumulative_score(course_id, strokes_per_hole):
+    total = 0
+    for hole_str, strokes in strokes_per_hole.items():
+        hole = int(hole_str)
+        par = get_par_for_hole(course_id, hole)
+        total += strokes - par
+    return total
+
+
 state = {
     'user': None,
     'clubs': {
@@ -73,7 +104,10 @@ state = {
         'status': 'Waiting for simulator...',
         'user_lon': None,
         'user_lat': None,
-        'timestamp': None
+        'timestamp': None,
+        'par': 4,
+        'strokes': 0,
+        'strokes_per_hole': {}
     }
 }
 
@@ -162,9 +196,27 @@ def recommend_club(distance_yards):
 @app.route('/api/live/update', methods=['POST'])
 def api_live_update():
     payload = request.json or {}
+    current_hole = state['live']['hole']
+    current_course = state['live']['course_id']
+    current_strokes = state['live']['strokes']
+    new_hole = payload.get('hole')
+    new_course = payload.get('course_id', current_course)
+
+    # Calculate score for previous hole if hole changed
+    if current_hole and current_hole != new_hole and current_strokes > 0:
+        state['live']['strokes_per_hole'][str(current_hole)] = current_strokes
+
+    # Reset strokes on new hole
+    if new_hole and new_hole != current_hole:
+        state['live']['strokes'] = 0
+
+    # Set par for new hole
+    if new_hole:
+        state['live']['par'] = get_par_for_hole(new_course, new_hole)
+
     state['live'].update({
-        'course_id': payload.get('course_id'),
-        'hole': payload.get('hole'),
+        'course_id': new_course,
+        'hole': new_hole,
         'distance': payload.get('distance'),
         'speed': payload.get('speed'),
         'status': payload.get('status', state['live']['status']),
@@ -176,10 +228,17 @@ def api_live_update():
     return jsonify({'message': 'Live state updated.', 'live': state['live']})
 
 
+@app.route('/api/live/stroke', methods=['POST'])
+def api_live_stroke():
+    state['live']['strokes'] += 1
+    return jsonify({'message': 'Stroke added.', 'strokes': state['live']['strokes']})
+
+
 @app.route('/api/live', methods=['GET'])
 def api_live():
     live_state = state['live'].copy()
     live_state['recommendation'] = recommend_club(live_state.get('distance'))
+    live_state['cumulative_score'] = get_cumulative_score(live_state['course_id'], live_state['strokes_per_hole'])
     return jsonify({'user': state['user'], 'clubs': state['clubs'], 'live': live_state})
 
 
