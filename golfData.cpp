@@ -175,7 +175,7 @@ string Golf::weatherImpact(string weatherCondition) {
     }
 }
 void Golf::displayWeatherAdvice(string weatherCondition) {
-     weatherImpact(weatherCondition)
+     string advice = weatherImpact(weatherCondition);
     cout << "Weather Condition: " << weatherCondition << endl;
-    cout << "Advice: " <<  weatherImpact(weatherCondition) << endl;
+    cout << "Advice: " << advice << endl;
 }

@@ -8,7 +8,7 @@ Profile::Profile() {
     lastName = "";
     email = "";
     age = 0;
-    handicap = 0.0;
+    handicap = 0;
 }
 Profile::Profile(string firstName, string lastName, string email) {
     // Parameterized constructor to initialize profile information
@@ -16,7 +16,7 @@ Profile::Profile(string firstName, string lastName, string email) {
     this->lastName = lastName;
     this->email = email;
     this->age = 0; // Default age
-    this->handicap = 0.0; // Default handicap
+    this->handicap = 0; // Default handicap
 }
 void Profile::displayAccountInfo() {
     cout << "Account Information:" << endl;
